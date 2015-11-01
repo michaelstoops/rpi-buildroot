@@ -15,19 +15,6 @@ usage() {
 	echo
 }
 
-confirm() {
-	echo "You are about to totally decimate the following device node: ${SDCARD}"
-	echo
-	echo "If you are sure you want to continue? (Please write \"YES\" in all caps)"
-
-	read CONTUNUE
-
-	if [ "${CONTUNUE}" != "YES" ]; then
-		echo "User didn't write \"YES\"... ABORTING!"
-		exit 1
-	fi
-}
-
 section() {
 	echo "*****************************************************************************************"
 	echo "> ${*}"
@@ -108,10 +95,6 @@ if [ ! -d "images/rpi-firmware" ] || [ ! -f "images/rootfs.tar" ]; then
 	fi
 fi
 
-# warn user
-
-confirm
-
 # partition image
 
 section "Partitioning SD card..."
@@ -122,14 +105,8 @@ n
 p
 1
 
-+32M
-n
-p
-2
-
-
++128M
 t
-1
 e
 a
 1
@@ -143,7 +120,6 @@ sleep 1
 section "Formatting partitions..."
 
 ${MKFS_VFAT} -F 16 -n BOOT -I "${SDCARD}1" || exit 1
-${MKFS_EXT4} -F -q -L rootfs "${SDCARD}2" || exit 1
 
 # prepare to fill partitions
 
@@ -159,15 +135,6 @@ ${CP} ${OUTPUT_PREFIX}images/rpi-firmware/fixup.dat .mnt
 ${CP} ${OUTPUT_PREFIX}images/rpi-firmware/start.elf .mnt
 ${CP} ${OUTPUT_PREFIX}images/zImage .mnt/kernel.img
 ${CP} ${OUTPUT_PREFIX}images/*.dtb .mnt
-${SYNC}
-${UMOUNT} .mnt
-
-# fill rootfs
-
-section "Populating rootfs partition..."
-
-${MOUNT} "${SDCARD}2" .mnt || exit 2
-${TAR} -xpsf ${OUTPUT_PREFIX}images/rootfs.tar -C .mnt
 ${SYNC}
 ${UMOUNT} .mnt
 
